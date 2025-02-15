@@ -1,48 +1,58 @@
-name: Deploy React App to S3 Checking
+name: Deploy React App to S3
 
 on:
   push:
     branches:
-      - main  # or your default branch name
+      - main  # Trigger on pushes to main branch
 
 env:
-  AWS_REGION: us-east-1  # Replace with your AWS region
-  S3_BUCKET: react-test  # Replace with your S3 bucket name
+  AWS_REGION: 'us-east-1'         # Update with your AWS region
+  S3_BUCKET: 'React-Check'   # Update with your S3 bucket name
+  BUILD_DIR: 'build'              # React's default build directory
 
 jobs:
   deploy:
+    name: Build and Deploy
     runs-on: ubuntu-latest
-    
+
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC authentication
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '20'  # Update to your Node.js version
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build React app
+      - name: Build project
         run: npm run build
-        env:
-          CI: false  # This prevents treating warnings as errors
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::123456789012:role/your-role-name  # Optional: Use OIDC
           aws-region: ${{ env.AWS_REGION }}
+          # If not using OIDC, use access keys instead:
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Deploy to S3
         run: |
-          aws s3 sync build/ s3://${{ env.S3_BUCKET }} --delete
-      
-      - name: Invalidate CloudFront cache (if using CloudFront)
-        if: vars.CLOUDFRONT_DISTRIBUTION_ID != ''
-        run: |
-          aws cloudfront create-invalidation --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+          aws s3 sync ${{ env.BUILD_DIR }} s3://${{ env.S3_BUCKET }} \
+            --delete \
+            --acl public-read
+
+      # # Optional: Invalidate CloudFront cache
+      # - name: Invalidate CloudFront
+      #   if: ${{ always() }}  # Run even if previous steps fail
+      #   run: |
+      #     aws cloudfront create-invalidation \
+      #       --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+      #       --paths "/*"
