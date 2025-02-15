@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: 'us-east-1'         # Update with your AWS region
-  S3_BUCKET: 'React-Check'   # Update with your S3 bucket name
+  S3_BUCKET: 'samplereac'   # Update with your S3 bucket name
   BUILD_DIR: 'build'              # React's default build directory
 
 jobs:
@@ -37,11 +37,11 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::123456789012:role/your-role-name  # Optional: Use OIDC
+          # role-to-assume: arn:aws:iam::123456789012:role/your-role-name  # Optional: Use OIDC
           aws-region: ${{ env.AWS_REGION }}
           # If not using OIDC, use access keys instead:
-          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Deploy to S3
         run: |
